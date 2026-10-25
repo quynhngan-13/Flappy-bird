@@ -8,10 +8,10 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🐦 Flappy Bird - Phiên bản Ống Cống & Âm Thanh")
-st.markdown("Nhấn phím **Space** hoặc **Click chuột** vào màn hình để bay. (Hãy bật âm thanh máy tính để nghe tiếng nhảy và tiếng thua nhé!)")
+st.title("🐦 Flappy Bird - Đầy đủ Ống Cống, Âm thanh & Nhạc nền")
+st.markdown("Nhấn phím **Space** hoặc **Click chuột** vào màn hình để bắt đầu bay và thưởng thức âm nhạc!")
 
-# Mã HTML/JS/CSS của game với ống cống chuẩn và hiệu ứng âm thanh Web Audio API
+# Mã HTML/JS/CSS hoàn chỉnh của game kèm Nhạc nền
 flappy_bird_html = """
 <!DOCTYPE html>
 <html>
@@ -46,13 +46,41 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH (Sử dụng Web Audio API không cần file ngoài) ---
+// --- HỆ THỐNG ÂM THANH & NHẠC NỀN (Web Audio API) ---
 let audioCtx = null;
+let bgmTimer = null;
+let bgmNoteIndex = 0;
+// Giai điệu nhạc nền vui tươi (Nốt nhạc tần sốHz)
+const bgmNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 392.00]; 
 
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+}
+
+// Khởi động nhạc nền khi vào game
+function startBGM() {
+    if (bgmTimer) return;
+    bgmTimer = setInterval(() => {
+        if (gameState === "PLAYING" && audioCtx) {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(bgmNotes[bgmNoteIndex], audioCtx.currentTime);
+            
+            // Âm lượng nhạc nền nhỏ dịu để không lấn át tiếng hiệu ứng
+            gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+            
+            bgmNoteIndex = (bgmNoteIndex + 1) % bgmNotes.length;
+        }
+    }, 220); // Tốc độ nhịp điệu nhạc nền
 }
 
 // Âm thanh khi chú chim nhảy (Flap)
@@ -179,8 +207,8 @@ const bird = {
 // --- QUẢN LÝ ỐNG CỐNG CHUẨN (PIPES) ---
 const pipes = {
     position: [],
-    topGap: 120,    // Khoảng hở giữa ống trên và ống dưới
-    dx: 2,          // Tốc độ di chuyển của ống
+    topGap: 120,    // Khoảng hở giữa ống trên và dưới
+    dx: 2,          // Tốc độ di chuyển
     width: 52,      // Độ rộng thân ống
 
     draw: function() {
@@ -191,33 +219,29 @@ const pipes = {
             let groundHeight = 50;
             let totalHeight = canvas.height - groundHeight;
 
-            // Màu sắc ống cống phong cách Flappy Bird
             let pipeColor = "#73BF2E";
             let pipeBorder = "#558022";
             let capHeight = 24;
-            let capOverhang = 4; // Phần đầu ống loe rộng ra hai bên
+            let capOverhang = 4; // Phần đầu ống loe rộng ra
 
             // --- 1. ỐNG TRÊN ---
-            // Thân ống trên
             ctx.fillStyle = pipeColor;
             ctx.fillRect(p.x, 0, this.width, topY - capHeight);
             ctx.strokeStyle = pipeBorder;
             ctx.lineWidth = 2;
             ctx.strokeRect(p.x, 0, this.width, topY - capHeight);
 
-            // Đầu ống trên (miệng ống loe rộng)
+            // Đầu ống trên
             ctx.fillRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
             ctx.strokeRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
-
 
             // --- 2. ỐNG DƯỚI ---
             let bottomPipeY = bottomY + capHeight;
             let bottomPipeHeight = totalHeight - bottomPipeY;
 
-            // Đầu ống dưới (miệng ống loe rộng)
+            // Đầu ống dưới
             ctx.fillStyle = pipeColor;
             ctx.fillRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
-            ctx.strokeStyle = pipeBorder;
             ctx.strokeRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
 
             // Thân ống dưới
@@ -229,7 +253,6 @@ const pipes = {
     update: function() {
         if (gameState !== "PLAYING") return;
 
-        // Sinh ống mới sau mỗi 100 khung hình
         if (frames % 100 === 0) {
             this.position.push({
                 x: canvas.width,
@@ -241,7 +264,6 @@ const pipes = {
             let p = this.position[i];
             p.x -= this.dx;
 
-            // Kiểm tra va chạm chính xác với thân ống và miệng ống
             let capOverhang = 4;
             let hitBoxX = p.x - capOverhang;
             let hitBoxWidth = this.width + (capOverhang * 2);
@@ -254,7 +276,7 @@ const pipes = {
                 gameOver();
             }
 
-            // Cộng điểm khi vượt qua ống
+            // Cộng điểm
             if (p.x + this.width < bird.x && !p.passed) {
                 score++;
                 p.passed = true;
@@ -262,7 +284,6 @@ const pipes = {
                 playScoreSound();
             }
 
-            // Xóa ống khi đi ra ngoài màn hình
             if (p.x + this.width <= 0) {
                 this.position.shift();
                 i--;
@@ -279,96 +300,9 @@ const pipes = {
 function drawGround() {
     ctx.fillStyle = "#D2B48C";
     ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-    ctx.fillStyle = "#558022"; // Viền cỏ xanh trên mặt đất
+    ctx.fillStyle = "#558022";
     ctx.fillRect(0, canvas.height - 50, canvas.width, 10);
 }
 
 function gameOver() {
-    if (gameState !== "GAMEOVER") {
-        gameState = "GAMEOVER";
-        playDieSound();
-    }
-}
-
-// --- GIAO DIỆN HIỂN THỊ (UI) ---
-function drawUI() {
-    ctx.fillStyle = "#FFF";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
-
-    if (gameState === "PLAYING") {
-        ctx.font = "bold 35px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(score, canvas.width / 2, 60);
-        ctx.strokeText(score, canvas.width / 2, 60);
-    } else if (gameState === "START") {
-        ctx.font = "bold 20px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Nhấn SPACE hoặc CLICK để chơi", canvas.width / 2, canvas.height / 2 - 20);
-    } else if (gameState === "GAMEOVER") {
-        ctx.font = "bold 30px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width / 2, 180);
-        ctx.strokeText("GAME OVER", canvas.width / 2, 180);
-
-        ctx.font = "20px Arial";
-        ctx.fillText("Điểm của bạn: " + score, canvas.width / 2, 230);
-        ctx.fillText("Kỷ lục: " + highScore, canvas.width / 2, 260);
-        
-        ctx.font = "bold 16px Arial";
-        ctx.fillText("Nhấn SPACE để chơi lại", canvas.width / 2, 310);
-    }
-}
-
-// --- XỬ LÝ SỰ KIỆN PHÍM BẤM & CLICK ---
-function action() {
-    initAudio();
-    if (gameState === "START") {
-        gameState = "PLAYING";
-        bird.flap();
-    } else if (gameState === "PLAYING") {
-        bird.flap();
-    } else if (gameState === "GAMEOVER") {
-        bird.reset();
-        pipes.reset();
-        score = 0;
-        gameState = "PLAYING";
-        bird.flap();
-    }
-}
-
-document.addEventListener("keydown", function(e) {
-    if (e.code === "Space") {
-        e.preventDefault();
-        action();
-    }
-});
-
-canvas.addEventListener("click", function() {
-    action();
-});
-
-// --- VÒNG LẬP CHÍNH CỦA GAME ---
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    bird.update();
-    pipes.update();
-
-    pipes.draw();
-    bird.draw();
-    drawGround();
-    drawUI();
-
-    frames++;
-    requestAnimationFrame(loop);
-}
-
-loop();
-</script>
-</body>
-</html>
-"""
-
-# Hiển thị game trong Streamlit
-components.html(flappy_bird_html, height=520)
+    if (
