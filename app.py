@@ -3,15 +3,15 @@ import streamlit.components.v1 as components
 
 # Cấu hình trang Streamlit
 st.set_page_config(
-    page_title="Flappy Bird - BIGBANG Edition",
+    page_title="Flappy Bird",
     page_icon="🐦",
     layout="centered"
 )
 
-st.title("🐦 Flappy Bird x BIGBANG (BANG BANG BANG)")
-st.markdown("Nhấn **Space** hoặc **Click chuột** để chơi game cùng giai điệu **'Bang Bang Bang'** cực đỉnh!")
+st.title("🐦 Flappy Bird")
+st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để điều khiển chú chim bay qua các ống cống!")
 
-# Mã HTML/JS/CSS hoàn chỉnh của game kèm nhạc nền Bang Bang Bang
+# Mã HTML/JS/CSS hoàn chỉnh của game
 flappy_bird_html = """
 <!DOCTYPE html>
 <html>
@@ -47,14 +47,14 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH & GIAI ĐIỆU "BANG BANG BANG" ---
+// --- HỆ THỐNG ÂM THANH & GIAI ĐIỆU NHẠC NỀN ---
 let audioCtx = null;
 let bgmTimer = null;
 let bgmNoteIndex = 0;
 
-// Mô phỏng giai điệu dồn dập, cuốn hút của "Bang Bang Bang" (Tần sốHz và độ dài nhịp)
+// Giai điệu nhạc nền cuốn hút
 const bangNotes = [
-    523.25, 523.25, 392.00, 392.00, 440.00, 440.00, 523.25, // "Bang bang bang..."
+    523.25, 523.25, 392.00, 392.00, 440.00, 440.00, 523.25,
     587.33, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00, 523.25
 ];
 
@@ -64,17 +64,16 @@ function initAudio() {
     }
 }
 
-// Hàm phát nhạc nền Bang Bang Bang tự động lặp lại khi đang chơi
+// Phát nhạc nền liên tục khi đang chơi
 function startBGM() {
     if (bgmTimer) return;
     bgmTimer = setInterval(() => {
         if (gameState === "PLAYING" && audioCtx) {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = "square"; // Dùng sóng vuông tạo âm thanh điện tử hiện đại, dồn dập giống beat nhạc nhảy
+            osc.type = "square";
             osc.frequency.setValueAtTime(bangNotes[bgmNoteIndex], audioCtx.currentTime);
             
-            // Âm lượng vừa phải để chơi game thoải mái
             gain.gain.setValueAtTime(0.025, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
             
@@ -85,10 +84,10 @@ function startBGM() {
             
             bgmNoteIndex = (bgmNoteIndex + 1) % bangNotes.length;
         }
-    }, 180); // Nhịp điệu nhanh, dồn dập chuẩn nhạc Kpop
+    }, 180);
 }
 
-// Âm thanh khi chú chim nhảy
+// Âm thanh khi vỗ cánh
 function playJumpSound() {
     initAudio();
     if (!audioCtx) return;
@@ -337,7 +336,7 @@ function drawUI() {
 
 function action() {
     initAudio();
-    startBGM(); // Kích hoạt nhạc nền Bang Bang Bang
+    startBGM();
     
     if (gameState === "START") {
         gameState = "PLAYING";
