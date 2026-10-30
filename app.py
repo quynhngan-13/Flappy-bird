@@ -3,15 +3,15 @@ import streamlit.components.v1 as components
 
 # Cấu hình trang Streamlit
 st.set_page_config(
-    page_title="Flappy Bird - Streamlit Edition",
+    page_title="Flappy Bird - BIGBANG Edition",
     page_icon="🐦",
     layout="centered"
 )
 
-st.title("🐦 Flappy Bird - Phiên bản Đầy đủ (Ống cống, Âm thanh & Nhạc nền)")
-st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để bắt đầu bay và thưởng thức nhạc nền!")
+st.title("🐦 Flappy Bird x BIGBANG (BANG BANG BANG)")
+st.markdown("Nhấn **Space** hoặc **Click chuột** để chơi game cùng giai điệu **'Bang Bang Bang'** cực đỉnh!")
 
-# Mã HTML/JS/CSS hoàn chỉnh của game
+# Mã HTML/JS/CSS hoàn chỉnh của game kèm nhạc nền Bang Bang Bang
 flappy_bird_html = """
 <!DOCTYPE html>
 <html>
@@ -47,13 +47,16 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH & NHẠC NỀN (Web Audio API) ---
+// --- HỆ THỐNG ÂM THANH & GIAI ĐIỆU "BANG BANG BANG" ---
 let audioCtx = null;
 let bgmTimer = null;
 let bgmNoteIndex = 0;
 
-// Các nốt nhạc tạo giai điệu nhạc nền vui tươi
-const bgmNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 392.00]; 
+// Mô phỏng giai điệu dồn dập, cuốn hút của "Bang Bang Bang" (Tần sốHz và độ dài nhịp)
+const bangNotes = [
+    523.25, 523.25, 392.00, 392.00, 440.00, 440.00, 523.25, // "Bang bang bang..."
+    587.33, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00, 523.25
+];
 
 function initAudio() {
     if (!audioCtx) {
@@ -61,28 +64,28 @@ function initAudio() {
     }
 }
 
-// Hàm phát nhạc nền lặp lại khi đang chơi
+// Hàm phát nhạc nền Bang Bang Bang tự động lặp lại khi đang chơi
 function startBGM() {
     if (bgmTimer) return;
     bgmTimer = setInterval(() => {
         if (gameState === "PLAYING" && audioCtx) {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(bgmNotes[bgmNoteIndex], audioCtx.currentTime);
+            osc.type = "square"; // Dùng sóng vuông tạo âm thanh điện tử hiện đại, dồn dập giống beat nhạc nhảy
+            osc.frequency.setValueAtTime(bangNotes[bgmNoteIndex], audioCtx.currentTime);
             
-            // Âm lượng nhạc nền nhỏ dịu để không lấn át tiếng hiệu ứng
-            gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            // Âm lượng vừa phải để chơi game thoải mái
+            gain.gain.setValueAtTime(0.025, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
+            osc.stop(audioCtx.currentTime + 0.15);
             
-            bgmNoteIndex = (bgmNoteIndex + 1) % bgmNotes.length;
+            bgmNoteIndex = (bgmNoteIndex + 1) % bangNotes.length;
         }
-    }, 220);
+    }, 180); // Nhịp điệu nhanh, dồn dập chuẩn nhạc Kpop
 }
 
 // Âm thanh khi chú chim nhảy
@@ -334,7 +337,7 @@ function drawUI() {
 
 function action() {
     initAudio();
-    startBGM(); // Kích hoạt nhạc nền
+    startBGM(); // Kích hoạt nhạc nền Bang Bang Bang
     
     if (gameState === "START") {
         gameState = "PLAYING";
