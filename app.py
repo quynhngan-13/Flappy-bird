@@ -3,15 +3,15 @@ import streamlit.components.v1 as components
 
 # Cấu hình trang Streamlit
 st.set_page_config(
-    page_title="Flappy Bird - Streamlit",
+    page_title="Flappy Bird - Streamlit Edition",
     page_icon="🐦",
     layout="centered"
 )
 
-st.title("🐦 Game Flappy Bird")
-st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để điều khiển chú chim bay qua ống cống!")
+st.title("🐦 Flappy Bird - Phiên bản Đầy đủ (Ống cống, Âm thanh & Nhạc nền)")
+st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để bắt đầu bay và thưởng thức nhạc nền!")
 
-# Mã HTML/JS/CSS game Flappy Bird chuẩn ống cống & có âm thanh
+# Mã HTML/JS/CSS hoàn chỉnh của game
 flappy_bird_html = """
 <!DOCTYPE html>
 <html>
@@ -45,10 +45,15 @@ const ctx = canvas.getContext("2d");
 let frames = 0;
 let score = 0;
 let highScore = 0;
-let gameState = "START";
+let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH (Web Audio API) ---
+// --- HỆ THỐNG ÂM THANH & NHẠC NỀN (Web Audio API) ---
 let audioCtx = null;
+let bgmTimer = null;
+let bgmNoteIndex = 0;
+
+// Các nốt nhạc tạo giai điệu nhạc nền vui tươi
+const bgmNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 392.00]; 
 
 function initAudio() {
     if (!audioCtx) {
@@ -56,6 +61,31 @@ function initAudio() {
     }
 }
 
+// Hàm phát nhạc nền lặp lại khi đang chơi
+function startBGM() {
+    if (bgmTimer) return;
+    bgmTimer = setInterval(() => {
+        if (gameState === "PLAYING" && audioCtx) {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(bgmNotes[bgmNoteIndex], audioCtx.currentTime);
+            
+            // Âm lượng nhạc nền nhỏ dịu để không lấn át tiếng hiệu ứng
+            gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+            
+            bgmNoteIndex = (bgmNoteIndex + 1) % bgmNotes.length;
+        }
+    }, 220);
+}
+
+// Âm thanh khi chú chim nhảy
 function playJumpSound() {
     initAudio();
     if (!audioCtx) return;
@@ -72,6 +102,7 @@ function playJumpSound() {
     osc.stop(audioCtx.currentTime + 0.1);
 }
 
+// Âm thanh khi ghi điểm
 function playScoreSound() {
     initAudio();
     if (!audioCtx) return;
@@ -88,6 +119,7 @@ function playScoreSound() {
     osc.stop(audioCtx.currentTime + 0.2);
 }
 
+// Âm thanh khi thua cuộc
 function playDieSound() {
     initAudio();
     if (!audioCtx) return;
@@ -169,7 +201,7 @@ const bird = {
     }
 };
 
-// --- QUẢN LÝ ỐNG CỐNG ---
+// --- QUẢN LÝ ỐNG CỐNG CHUẨN ---
 const pipes = {
     position: [],
     topGap: 120,
@@ -302,6 +334,8 @@ function drawUI() {
 
 function action() {
     initAudio();
+    startBGM(); // Kích hoạt nhạc nền
+    
     if (gameState === "START") {
         gameState = "PLAYING";
         bird.flap();
