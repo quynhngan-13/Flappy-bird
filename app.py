@@ -224,3 +224,129 @@ const pipes = {
 
         for (let i = 0; i < this.position.length; i++) {
             let p = this.position[i];
+            p.x -= this.dx;
+
+            let capOverhang = 4;
+            let hitBoxX = p.x - capOverhang;
+            let hitBoxWidth = this.width + (capOverhang * 2);
+
+            if (
+                bird.x + bird.radius > hitBoxX &&
+                bird.x - bird.radius < hitBoxX + hitBoxWidth &&
+                (bird.y - bird.radius < p.y || bird.y + bird.radius > p.y + this.topGap)
+            ) {
+                gameOver();
+            }
+
+            if (p.x + this.width < bird.x && !p.passed) {
+                score++;
+                p.passed = true;
+                if (score > highScore) highScore = score;
+                playScoreSound();
+            }
+
+            if (p.x + this.width <= 0) {
+                this.position.shift();
+                i--;
+            }
+        }
+    },
+
+    reset: function() {
+        this.position = [];
+    }
+};
+
+function drawGround() {
+    ctx.fillStyle = "#D2B48C";
+    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+    ctx.fillStyle = "#558022";
+    ctx.fillRect(0, canvas.height - 50, canvas.width, 10);
+}
+
+function gameOver() {
+    if (gameState !== "GAMEOVER") {
+        gameState = "GAMEOVER";
+        playDieSound();
+    }
+}
+
+function drawUI() {
+    ctx.fillStyle = "#FFF";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 3;
+
+    if (gameState === "PLAYING") {
+        ctx.font = "bold 35px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(score, canvas.width / 2, 60);
+        ctx.strokeText(score, canvas.width / 2, 60);
+    } else if (gameState === "START") {
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Nhấn SPACE hoặc CLICK để chơi", canvas.width / 2, canvas.height / 2);
+    } else if (gameState === "GAMEOVER") {
+        ctx.font = "bold 30px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width / 2, 180);
+        ctx.strokeText("GAME OVER", canvas.width / 2, 180);
+
+        ctx.font = "20px Arial";
+        ctx.fillText("Điểm: " + score, canvas.width / 2, 230);
+        ctx.fillText("Kỷ lục: " + highScore, canvas.width / 2, 260);
+        
+        ctx.font = "bold 16px Arial";
+        ctx.fillText("Nhấn SPACE để chơi lại", canvas.width / 2, 310);
+    }
+}
+
+function action() {
+    initAudio();
+    if (gameState === "START") {
+        gameState = "PLAYING";
+        bird.flap();
+    } else if (gameState === "PLAYING") {
+        bird.flap();
+    } else if (gameState === "GAMEOVER") {
+        bird.reset();
+        pipes.reset();
+        score = 0;
+        gameState = "PLAYING";
+        bird.flap();
+    }
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.code === "Space") {
+        e.preventDefault();
+        action();
+    }
+});
+
+canvas.addEventListener("click", function() {
+    action();
+});
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    bird.update();
+    pipes.update();
+
+    pipes.draw();
+    bird.draw();
+    drawGround();
+    drawUI();
+
+    frames++;
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
+"""
+
+# Hiển thị game trong ứng dụng Streamlit
+components.html(flappy_bird_html, height=520)
