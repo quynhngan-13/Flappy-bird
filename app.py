@@ -6,7 +6,7 @@ st.set_page_config(
     page_title="Flappy Bird",
     page_icon="🐦",
     layout="centered"
-}
+)
 
 st.title("🐦 Flappy Bird")
 st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để bắt đầu")
@@ -47,17 +47,17 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH & NHẠC NỀN EDM SÔI ĐỘNG ---
+// --- HỆ THỐNG ÂM THANH & NHẠC NỀN EDM SIÊU SÔI ĐỘNG ---
 let audioCtx = null;
 let bgmTimer = null;
 let bgmNoteIndex = 0;
 
-// Giai điệu nhạc điện tử (EDM/Synthwave) cực kỳ dồn dập, bốc lửa và sôi động
-const energeticNotes = [
-    523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 523.25, 880.00,
-    587.33, 698.46, 880.00, 1174.66, 880.00, 698.46, 587.33, 987.77,
-    440.00, 523.25, 659.25, 880.00, 1046.50, 880.00, 659.25, 523.25,
-    349.23, 440.00, 523.25, 698.46, 880.00, 698.46, 523.25, 440.00
+// Chuỗi nốt nhạc EDM tốc độ cao, dồn dập và bốc lửa nhất
+const ultraEdmNotes = [
+    523.25, 1046.50, 659.25, 1318.51, 783.99, 1567.98, 880.00, 1760.00,
+    1174.66, 587.33, 1318.51, 659.25, 1567.98, 783.99, 1760.00, 880.00,
+    1046.50, 523.25, 1174.66, 587.33, 1318.51, 659.25, 1567.98, 783.99,
+    2093.00, 1760.00, 1567.98, 1318.51, 1174.66, 1046.50, 880.00, 783.99
 ];
 
 function initAudio() {
@@ -72,20 +72,20 @@ function startBGM() {
         if (gameState === "PLAYING" && audioCtx) {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = "sawtooth"; // Sóng răng cưa tạo âm thanh điện tử mạnh mẽ, sắc sảo
-            osc.frequency.setValueAtTime(energeticNotes[bgmNoteIndex], audioCtx.currentTime);
+            osc.type = "sawtooth"; // Sóng răng cưa tạo âm thanh điện tử cực sắc và mạnh
+            osc.frequency.setValueAtTime(ultraEdmNotes[bgmNoteIndex], audioCtx.currentTime);
             
-            gain.gain.setValueAtTime(0.035, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.08);
             
-            bgmNoteIndex = (bgmNoteIndex + 1) % energeticNotes.length;
+            bgmNoteIndex = (bgmNoteIndex + 1) % ultraEdmNotes.length;
         }
-    }, 125); // Nhịp độ cực nhanh và cuốn hút
+    }, 100); // Tốc độ cực nhanh (100 mili-giây mỗi nốt) tạo cảm giác bốc lửa
 }
 
 function playJumpSound() {
@@ -228,187 +228,4 @@ const pipes = {
 
     getRandomColor: function(lastColor) {
         let available = this.pipePalette.filter(p => !lastColor || p.main !== lastColor.main);
-        return available[Math.floor(Math.random() * available.length)];
-    },
-
-    draw: function() {
-        for (let i = 0; i < this.position.length; i++) {
-            let p = this.position[i];
-            let topY = p.y;
-            let bottomY = p.y + this.topGap;
-            let totalHeight = canvas.height - 50;
-
-            let pipeColor = p.color.main;
-            let pipeBorder = p.color.border;
-            let capHeight = 24;
-            let capOverhang = 4;
-
-            // Ống trên
-            ctx.fillStyle = pipeColor;
-            ctx.fillRect(p.x, 0, this.width, topY - capHeight);
-            ctx.strokeStyle = pipeBorder;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(p.x, 0, this.width, topY - capHeight);
-
-            ctx.fillRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
-            ctx.strokeRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
-
-            // Ống dưới
-            let bottomPipeY = bottomY + capHeight;
-            let bottomPipeHeight = totalHeight - bottomPipeY;
-
-            ctx.fillStyle = pipeColor;
-            ctx.fillRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
-            ctx.strokeStyle = pipeBorder;
-            ctx.strokeRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
-
-            ctx.fillRect(p.x, bottomPipeY, this.width, bottomPipeHeight);
-            ctx.strokeRect(p.x, bottomPipeY, this.width, bottomPipeHeight);
-        }
-    },
-
-    update: function() {
-        if (gameState !== "PLAYING") return;
-
-        if (frames % 100 === 0) {
-            let lastPipeColor = this.position.length > 0 ? this.position[this.position.length - 1].color : null;
-            this.position.push({
-                x: canvas.width,
-                y: Math.floor(Math.random() * (200 - 50 + 1)) + 50,
-                color: this.getRandomColor(lastPipeColor)
-            });
-        }
-
-        for (let i = 0; i < this.position.length; i++) {
-            let p = this.position[i];
-            p.x -= this.dx;
-
-            let capOverhang = 4;
-            let hitBoxX = p.x - capOverhang;
-            let hitBoxWidth = this.width + (capOverhang * 2);
-
-            if (
-                bird.x + bird.radius > hitBoxX &&
-                bird.x - bird.radius < hitBoxX + hitBoxWidth &&
-                (bird.y - bird.radius < p.y || bird.y + bird.radius > p.y + this.topGap)
-            ) {
-                gameOver();
-            }
-
-            if (p.x + this.width < bird.x && !p.passed) {
-                score++;
-                p.passed = true;
-                if (score > highScore) highScore = score;
-                playScoreSound();
-                bird.changeColor();
-            }
-
-            if (p.x + this.width <= 0) {
-                this.position.shift();
-                i--;
-            }
-        }
-    },
-
-    reset: function() {
-        this.position = [];
-    }
-};
-
-function drawGround() {
-    ctx.fillStyle = "#D2B48C";
-    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-    ctx.fillStyle = "#558022";
-    ctx.fillRect(0, canvas.height - 50, canvas.width, 10);
-}
-
-function gameOver() {
-    if (gameState !== "GAMEOVER") {
-        gameState = "GAMEOVER";
-        playDieSound();
-    }
-}
-
-function drawUI() {
-    ctx.fillStyle = "#FFF";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
-
-    if (gameState === "PLAYING") {
-        ctx.font = "bold 35px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(score, canvas.width / 2, 60);
-        ctx.strokeText(score, canvas.width / 2, 60);
-    } else if (gameState === "START") {
-        ctx.font = "bold 15px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Nhấn Space hoặc Click chuột", canvas.width / 2, canvas.height / 2 - 10);
-        ctx.fillText("vào màn hình game để bắt đầu", canvas.width / 2, canvas.height / 2 + 15);
-    } else if (gameState === "GAMEOVER") {
-        ctx.font = "bold 30px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width / 2, 180);
-        ctx.strokeText("GAME OVER", canvas.width / 2, 180);
-
-        ctx.font = "20px Arial";
-        ctx.fillText("Điểm: " + score, canvas.width / 2, 230);
-        ctx.fillText("Kỷ lục: " + highScore, canvas.width / 2, 260);
-        
-        ctx.font = "bold 15px Arial";
-        ctx.fillText("Nhấn Space hoặc Click chuột", canvas.width / 2, 310);
-        ctx.fillText("vào màn hình game để bắt đầu", canvas.width / 2, 330);
-    }
-}
-
-function action() {
-    initAudio();
-    startBGM();
-    
-    if (gameState === "START") {
-        gameState = "PLAYING";
-        bird.flap();
-    } else if (gameState === "PLAYING") {
-        bird.flap();
-    } else if (gameState === "GAMEOVER") {
-        bird.reset();
-        pipes.reset();
-        score = 0;
-        gameState = "PLAYING";
-        bird.flap();
-    }
-}
-
-document.addEventListener("keydown", function(e) {
-    if (e.code === "Space") {
-        e.preventDefault();
-        action();
-    }
-});
-
-canvas.addEventListener("click", function() {
-    action();
-});
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    bird.update();
-    pipes.update();
-
-    pipes.draw();
-    bird.draw();
-    drawGround();
-    drawUI();
-
-    frames++;
-    requestAnimationFrame(loop);
-}
-
-loop();
-</script>
-</body>
-</html>
-"""
-
-# Hiển thị game trong ứng dụng Streamlit
-components.html(flappy_bird_html, height=520)
+        return available
