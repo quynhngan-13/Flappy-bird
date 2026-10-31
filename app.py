@@ -47,17 +47,18 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH & ĐIỆP KHÚC "GANGNAM STYLE" ---
+// --- HỆ THỐNG ÂM THANH & GIAI ĐIỆU "MỘT CON VỊT" ---
 let audioCtx = null;
 let bgmTimer = null;
 let bgmNoteIndex = 0;
 
-// Giai điệu điệp khúc sôi động nhất của Gangnam Style ("Oppa Gangnam Style / Eh, sexy lady...")
-const gangnamChorusNotes = [
-    659.25, 659.25, 659.25, 587.33, 659.25, 523.25, 440.00,
-    659.25, 659.25, 659.25, 587.33, 659.25, 523.25, 587.33,
-    783.99, 783.99, 783.99, 659.25, 783.99,
-    880.00, 783.99, 659.25, 587.33, 523.25
+// Giai điệu sôi động của bài "Một con vịt xòe ra 2 cái cánh..."
+// (Đoạn: Một con vịt xòe ra hai cái cánh / Nó kêu rằng cáp cáp cáp cạc cạc cạc / Gặp hồ nước nó bì bà bì bõm / Lúc lên bờ vẫy cái cánh cho khô)
+const duckNotes = [
+    523.25, 523.25, 523.25, 440.00, 523.25, 587.33, 659.25, // Một con vịt xòe ra 2 cái cánh
+    659.25, 587.33, 523.25, 587.33, 659.25, 523.25,          // Nó kêu rằng cáp cáp cáp cạc cạc cạc
+    523.25, 587.33, 659.25, 587.33, 523.25, 440.00, 392.00, // Gặp hồ nước nó bì bà bì bõm
+    440.00, 523.25, 587.33, 659.25, 587.33, 523.25           // Lúc lên bờ vẫy cái cánh cho khô
 ];
 
 function initAudio() {
@@ -72,20 +73,20 @@ function startBGM() {
         if (gameState === "PLAYING" && audioCtx) {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(gangnamChorusNotes[bgmNoteIndex], audioCtx.currentTime);
+            osc.type = "triangle"; // Chất âm trong trẻo, vui nhộn
+            osc.frequency.setValueAtTime(duckNotes[bgmNoteIndex], audioCtx.currentTime);
             
-            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.13);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.13);
+            osc.stop(audioCtx.currentTime + 0.14);
             
-            bgmNoteIndex = (bgmNoteIndex + 1) % gangnamChorusNotes.length;
+            bgmNoteIndex = (bgmNoteIndex + 1) % duckNotes.length;
         }
-    }, 160);
+    }, 170); // Nhịp điệu vui tươi sôi động
 }
 
 function playJumpSound() {
@@ -167,248 +168,4 @@ const bird = {
         ctx.fill();
         ctx.fillStyle = "#000";
         ctx.beginPath();
-        ctx.arc(this.x + 6, this.y - 3, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#FF4500";
-        ctx.beginPath();
-        ctx.moveTo(this.x + 8, this.y);
-        ctx.lineTo(this.x + 16, this.y + 3);
-        ctx.lineTo(this.x + 8, this.y + 6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-    },
-    
-    flap: function() {
-        this.velocity = -this.jump;
-        playJumpSound();
-    },
-    
-    update: function() {
-        if (gameState === "PLAYING") {
-            this.velocity += this.gravity;
-            this.y += this.velocity;
-
-            if (this.y + this.radius >= canvas.height - 50) {
-                this.y = canvas.height - 50 - this.radius;
-                gameOver();
-            }
-
-            if (this.y - this.radius <= 0) {
-                this.y = this.radius;
-                this.velocity = 0;
-            }
-        }
-    },
-    
-    reset: function() {
-        this.y = 150;
-        this.velocity = 0;
-        this.color = "#FFD700";
-    }
-};
-
-// --- QUẢN LÝ ỐNG CỐNG (Mỗi ống cống một màu riêng) ---
-const pipes = {
-    position: [],
-    topGap: 120,
-    dx: 2,
-    width: 52,
-    pipePalette: [
-        { main: "#73BF2E", border: "#558022" },
-        { main: "#E74C3C", border: "#C0392B" },
-        { main: "#3498DB", border: "#2980B9" },
-        { main: "#9B59B6", border: "#8E44AD" },
-        { main: "#F1C40F", border: "#D4AC0D" },
-        { main: "#E67E22", border: "#D35400" },
-        { main: "#1ABC9C", border: "#16A085" },
-        { main: "#E84393", border: "#B22E6F" }
-    ],
-
-    getRandomColor: function(lastColor) {
-        let available = this.pipePalette.filter(p => !lastColor || p.main !== lastColor.main);
-        return available[Math.floor(Math.random() * available.length)];
-    },
-
-    draw: function() {
-        for (let i = 0; i < this.position.length; i++) {
-            let p = this.position[i];
-            let topY = p.y;
-            let bottomY = p.y + this.topGap;
-            let totalHeight = canvas.height - 50;
-
-            let pipeColor = p.color.main;
-            let pipeBorder = p.color.border;
-            let capHeight = 24;
-            let capOverhang = 4;
-
-            // Ống trên
-            ctx.fillStyle = pipeColor;
-            ctx.fillRect(p.x, 0, this.width, topY - capHeight);
-            ctx.strokeStyle = pipeBorder;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(p.x, 0, this.width, topY - capHeight);
-
-            ctx.fillRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
-            ctx.strokeRect(p.x - capOverhang, topY - capHeight, this.width + (capOverhang * 2), capHeight);
-
-            // Ống dưới
-            let bottomPipeY = bottomY + capHeight;
-            let bottomPipeHeight = totalHeight - bottomPipeY;
-
-            ctx.fillStyle = pipeColor;
-            ctx.fillRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
-            ctx.strokeStyle = pipeBorder;
-            ctx.strokeRect(p.x - capOverhang, bottomY, this.width + (capOverhang * 2), capHeight);
-
-            ctx.fillRect(p.x, bottomPipeY, this.width, bottomPipeHeight);
-            ctx.strokeRect(p.x, bottomPipeY, this.width, bottomPipeHeight);
-        }
-    },
-
-    update: function() {
-        if (gameState !== "PLAYING") return;
-
-        if (frames % 100 === 0) {
-            let lastPipeColor = this.position.length > 0 ? this.position[this.position.length - 1].color : null;
-            this.position.push({
-                x: canvas.width,
-                y: Math.floor(Math.random() * (200 - 50 + 1)) + 50,
-                color: this.getRandomColor(lastPipeColor)
-            });
-        }
-
-        for (let i = 0; i < this.position.length; i++) {
-            let p = this.position[i];
-            p.x -= this.dx;
-
-            let capOverhang = 4;
-            let hitBoxX = p.x - capOverhang;
-            let hitBoxWidth = this.width + (capOverhang * 2);
-
-            if (
-                bird.x + bird.radius > hitBoxX &&
-                bird.x - bird.radius < hitBoxX + hitBoxWidth &&
-                (bird.y - bird.radius < p.y || bird.y + bird.radius > p.y + this.topGap)
-            ) {
-                gameOver();
-            }
-
-            if (p.x + this.width < bird.x && !p.passed) {
-                score++;
-                p.passed = true;
-                if (score > highScore) highScore = score;
-                playScoreSound();
-                bird.changeColor();
-            }
-
-            if (p.x + this.width <= 0) {
-                this.position.shift();
-                i--;
-            }
-        }
-    },
-
-    reset: function() {
-        this.position = [];
-    }
-};
-
-function drawGround() {
-    ctx.fillStyle = "#D2B48C";
-    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-    ctx.fillStyle = "#558022";
-    ctx.fillRect(0, canvas.height - 50, canvas.width, 10);
-}
-
-function gameOver() {
-    if (gameState !== "GAMEOVER") {
-        gameState = "GAMEOVER";
-        playDieSound();
-    }
-}
-
-function drawUI() {
-    ctx.fillStyle = "#FFF";
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 3;
-
-    if (gameState === "PLAYING") {
-        ctx.font = "bold 35px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(score, canvas.width / 2, 60);
-        ctx.strokeText(score, canvas.width / 2, 60);
-    } else if (gameState === "START") {
-        ctx.font = "bold 15px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("Nhấn Space hoặc Click chuột", canvas.width / 2, canvas.height / 2 - 10);
-        ctx.fillText("vào màn hình game để bắt đầu", canvas.width / 2, canvas.height / 2 + 15);
-    } else if (gameState === "GAMEOVER") {
-        ctx.font = "bold 30px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width / 2, 180);
-        ctx.strokeText("GAME OVER", canvas.width / 2, 180);
-
-        ctx.font = "20px Arial";
-        ctx.fillText("Điểm: " + score, canvas.width / 2, 230);
-        ctx.fillText("Kỷ lục: " + highScore, canvas.width / 2, 260);
-        
-        ctx.font = "bold 15px Arial";
-        ctx.fillText("Nhấn Space hoặc Click chuột", canvas.width / 2, 310);
-        ctx.fillText("vào màn hình game để bắt đầu", canvas.width / 2, 330);
-    }
-}
-
-function action() {
-    initAudio();
-    startBGM();
-    
-    if (gameState === "START") {
-        gameState = "PLAYING";
-        bird.flap();
-    } else if (gameState === "PLAYING") {
-        bird.flap();
-    } else if (gameState === "GAMEOVER") {
-        bird.reset();
-        pipes.reset();
-        score = 0;
-        gameState = "PLAYING";
-        bird.flap();
-    }
-}
-
-document.addEventListener("keydown", function(e) {
-    if (e.code === "Space") {
-        e.preventDefault();
-        action();
-    }
-});
-
-canvas.addEventListener("click", function() {
-    action();
-});
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    bird.update();
-    pipes.update();
-
-    pipes.draw();
-    bird.draw();
-    drawGround();
-    drawUI();
-
-    frames++;
-    requestAnimationFrame(loop);
-}
-
-loop();
-</script>
-</body>
-</html>
-"""
-
-# Hiển thị game trong ứng dụng Streamlit
-components.html(flappy_bird_html, height=520)
+        ctx.
