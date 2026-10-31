@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 st.title("🐦 Flappy Bird")
-st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình game để điều khiển chú chim bay qua các ống cống!")
+st.markdown("Nhấn **Space** hoặc **Click chuột** vào màn hình để bay cùng giai điệu điệp khúc **'Bang Bang Bang'** và ngắm ống cống đổi màu liên tục!")
 
 # Mã HTML/JS/CSS hoàn chỉnh của game
 flappy_bird_html = """
@@ -47,15 +47,15 @@ let score = 0;
 let highScore = 0;
 let gameState = "START"; // START, PLAYING, GAMEOVER
 
-// --- HỆ THỐNG ÂM THANH & GIAI ĐIỆU NHẠC NỀN ---
+// --- HỆ THỐNG ÂM THANH & ĐIỆP KHÚC "BANG BANG BANG" ---
 let audioCtx = null;
 let bgmTimer = null;
 let bgmNoteIndex = 0;
 
-// Giai điệu nhạc nền cuốn hút
-const bangNotes = [
-    523.25, 523.25, 392.00, 392.00, 440.00, 440.00, 523.25,
-    587.33, 523.25, 440.00, 392.00, 349.23, 392.00, 440.00, 523.25
+// Giai điệu phần điệp khúc đặc trưng của "Bang Bang Bang" (BIGBANG)
+const bangChorusNotes = [
+    523.25, 523.25, 587.33, 659.25, 523.25, 392.00, 440.00, 523.25,
+    659.25, 659.25, 587.33, 523.25, 440.00, 523.25, 587.33, 523.25
 ];
 
 function initAudio() {
@@ -64,7 +64,7 @@ function initAudio() {
     }
 }
 
-// Phát nhạc nền liên tục khi đang chơi
+// Phát nhạc điệp khúc dồn dập khi đang chơi
 function startBGM() {
     if (bgmTimer) return;
     bgmTimer = setInterval(() => {
@@ -72,19 +72,19 @@ function startBGM() {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = "square";
-            osc.frequency.setValueAtTime(bangNotes[bgmNoteIndex], audioCtx.currentTime);
+            osc.frequency.setValueAtTime(bangChorusNotes[bgmNoteIndex], audioCtx.currentTime);
             
-            gain.gain.setValueAtTime(0.025, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.15);
+            osc.stop(audioCtx.currentTime + 0.12);
             
-            bgmNoteIndex = (bgmNoteIndex + 1) % bangNotes.length;
+            bgmNoteIndex = (bgmNoteIndex + 1) % bangChorusNotes.length;
         }
-    }, 180);
+    }, 150); // Nhịp điệu dồn dập chuẩn điệp khúc
 }
 
 // Âm thanh khi vỗ cánh
@@ -104,7 +104,7 @@ function playJumpSound() {
     osc.stop(audioCtx.currentTime + 0.1);
 }
 
-// Âm thanh khi ghi điểm
+// Âm thanh khi ghi điểm và đổi màu toàn bộ ống cống
 function playScoreSound() {
     initAudio();
     if (!audioCtx) return;
@@ -203,12 +203,26 @@ const bird = {
     }
 };
 
-// --- QUẢN LÝ ỐNG CỐNG CHUẨN ---
+// --- QUẢN LÝ ỐNG CỐNG (Mỗi ống một màu & Đổi màu khi vượt qua) ---
 const pipes = {
     position: [],
     topGap: 120,
     dx: 2,
     width: 52,
+    // Danh sách các bảng màu sặc sỡ cho ống cống
+    colorPalette: [
+        { main: "#73BF2E", border: "#558022" }, // Xanh lá
+        { main: "#E74C3C", border: "#C0392B" }, // Đỏ
+        { main: "#3498DB", border: "#2980B9" }, // Xanh dương
+        { main: "#9B59B6", border: "#8E44AD" }, // Tím
+        { main: "#F1C40F", border: "#D4AC0D" }, // Vàng
+        { main: "#E67E22", border: "#D35400" }, // Cam
+        { main: "#1ABC9C", border: "#16A085" }  // Ngọc lam
+    ],
+
+    getRandomColor: function() {
+        return this.colorPalette[Math.floor(Math.random() * this.colorPalette.length)];
+    },
 
     draw: function() {
         for (let i = 0; i < this.position.length; i++) {
@@ -217,8 +231,8 @@ const pipes = {
             let bottomY = p.y + this.topGap;
             let totalHeight = canvas.height - 50;
 
-            let pipeColor = "#73BF2E";
-            let pipeBorder = "#558022";
+            let pipeColor = p.color.main;
+            let pipeBorder = p.color.border;
             let capHeight = 24;
             let capOverhang = 4;
 
@@ -252,7 +266,8 @@ const pipes = {
         if (frames % 100 === 0) {
             this.position.push({
                 x: canvas.width,
-                y: Math.floor(Math.random() * (200 - 50 + 1)) + 50
+                y: Math.floor(Math.random() * (200 - 50 + 1)) + 50,
+                color: this.getRandomColor() // Gán màu ngẫu nhiên cho ống mới xuất hiện
             });
         }
 
@@ -272,11 +287,17 @@ const pipes = {
                 gameOver();
             }
 
+            // Khi chim vượt qua ống cống: Cộng điểm, phát âm thanh và đổi màu TOÀN BỘ ống cống hiện có trên màn hình
             if (p.x + this.width < bird.x && !p.passed) {
                 score++;
                 p.passed = true;
                 if (score > highScore) highScore = score;
                 playScoreSound();
+
+                // Đổi màu ngẫu nhiên cho tất cả các ống đang hiển thị trên màn hình
+                for (let j = 0; j < this.position.length; j++) {
+                    this.position[j].color = this.getRandomColor();
+                }
             }
 
             if (p.x + this.width <= 0) {
